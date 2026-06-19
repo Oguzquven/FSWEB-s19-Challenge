@@ -23,7 +23,6 @@ public class TweetController {
     }
 
     // POST /tweet - Tweet oluştur
-    // @Valid: TweetRequest validasyonlarını çalıştırır
     @PostMapping
     public ResponseEntity<Dtos.TweetResponse> createTweet(
             @Valid @RequestBody Dtos.TweetRequest request) {
@@ -31,8 +30,14 @@ public class TweetController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    // GET /tweet/all - Tüm tweetleri getir (ana sayfa için)
+    @GetMapping("/all")
+    public ResponseEntity<List<Dtos.TweetResponse>> getAllTweets() {
+        List<Dtos.TweetResponse> tweets = tweetService.getAllTweets();
+        return ResponseEntity.ok(tweets);
+    }
+
     // GET /tweet/findByUserId?userId=1 - Kullanıcının tüm tweetleri
-    // @RequestParam: URL'deki ?userId=1 parametresini alır
     @GetMapping("/findByUserId")
     public ResponseEntity<List<Dtos.TweetResponse>> getTweetsByUserId(
             @RequestParam Long userId) {
@@ -49,7 +54,6 @@ public class TweetController {
     }
 
     // PUT /tweet/1 - Tweet güncelle
-    // @PathVariable: URL'deki {id} değişkenini alır
     @PutMapping("/{id}")
     public ResponseEntity<Dtos.TweetResponse> updateTweet(
             @PathVariable Long id,
@@ -59,12 +63,11 @@ public class TweetController {
     }
 
     // DELETE /tweet/1?userId=1 - Tweet sil
-    // Sadece tweet sahibi silebilir
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteTweet(
             @PathVariable Long id,
             @RequestParam Long userId) {
         tweetService.deleteTweet(id, userId);
-        return ResponseEntity.ok("Tweet başarıyla silindi");
+        return ResponseEntity.ok("Tweet basariyla silindi");
     }
 }

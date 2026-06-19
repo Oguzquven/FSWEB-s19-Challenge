@@ -27,12 +27,12 @@ public class TweetService {
         this.userRepository = userRepository;
     }
 
-    // Tweet oluştur - @Transactional: işlem bitmeden veritabanına yazılmaz
+    // Tweet oluştur
     @Transactional
     public Dtos.TweetResponse createTweet(Dtos.TweetRequest request) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Kullanıcı bulunamadı: " + request.getUserId()));
+                        "Kullanici bulunamadi: " + request.getUserId()));
 
         Tweet tweet = new Tweet();
         tweet.setContent(request.getContent());
@@ -42,12 +42,20 @@ public class TweetService {
         return convertToResponse(savedTweet);
     }
 
+    // Tüm tweetleri getir - ana sayfa için
+    @Transactional
+    public List<Dtos.TweetResponse> getAllTweets() {
+        return tweetRepository.findAll()
+                .stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
     // Kullanıcının tüm tweetleri
-    // @Transactional: lazy loading için session açık kalır
     @Transactional
     public List<Dtos.TweetResponse> getTweetsByUserId(Long userId) {
         if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("Kullanıcı bulunamadı: " + userId);
+            throw new ResourceNotFoundException("Kullanici bulunamadi: " + userId);
         }
         return tweetRepository.findByUserId(userId)
                 .stream()
@@ -60,7 +68,7 @@ public class TweetService {
     public Dtos.TweetResponse getTweetById(Long id) {
         Tweet tweet = tweetRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Tweet bulunamadı: " + id));
+                        "Tweet bulunamadi: " + id));
         return convertToResponse(tweet);
     }
 
@@ -69,10 +77,10 @@ public class TweetService {
     public Dtos.TweetResponse updateTweet(Long id, Dtos.TweetRequest request) {
         Tweet tweet = tweetRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Tweet bulunamadı: " + id));
+                        "Tweet bulunamadi: " + id));
 
         if (!tweet.getUser().getId().equals(request.getUserId())) {
-            throw new UnauthorizedException("Bu tweeti güncelleme yetkiniz yok");
+            throw new UnauthorizedException("Bu tweeti guncelleme yetkiniz yok");
         }
 
         tweet.setContent(request.getContent());
@@ -85,7 +93,7 @@ public class TweetService {
     public void deleteTweet(Long id, Long userId) {
         Tweet tweet = tweetRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Tweet bulunamadı: " + id));
+                        "Tweet bulunamadi: " + id));
 
         if (!tweet.getUser().getId().equals(userId)) {
             throw new UnauthorizedException("Bu tweeti silme yetkiniz yok");
@@ -94,14 +102,13 @@ public class TweetService {
         tweetRepository.delete(tweet);
     }
 
-    // Entity'yi DTO'ya çevirir - lazy loading güvenli hale getirildi
+    // Entity'yi DTO'ya çevirir
     private Dtos.TweetResponse convertToResponse(Tweet tweet) {
         Dtos.TweetResponse response = new Dtos.TweetResponse();
         response.setId(tweet.getId());
         response.setContent(tweet.getContent());
         response.setUsername(tweet.getUser().getUsername());
         response.setUserId(tweet.getUser().getId());
-        // try-catch: lazy loading hatalarına karşı güvenli
         try {
             response.setLikeCount(tweet.getLikes().size());
             response.setCommentCount(tweet.getComments().size());
