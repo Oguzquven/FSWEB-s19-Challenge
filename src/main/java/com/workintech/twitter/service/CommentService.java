@@ -11,6 +11,7 @@ import com.workintech.twitter.repository.TweetRepository;
 import com.workintech.twitter.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,7 +23,6 @@ public class CommentService {
     private final TweetRepository tweetRepository;
     private final UserRepository userRepository;
 
-    // Constructor Injection
     @Autowired
     public CommentService(CommentRepository commentRepository,
                           TweetRepository tweetRepository,
@@ -33,18 +33,16 @@ public class CommentService {
     }
 
     // Tweete yorum yap
+    @Transactional
     public Dtos.CommentResponse createComment(Dtos.CommentRequest request) {
-        // Tweet var mı kontrol et
         Tweet tweet = tweetRepository.findById(request.getTweetId())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Tweet bulunamadı: " + request.getTweetId()));
+                        "Tweet bulunamadi: " + request.getTweetId()));
 
-        // Kullanıcı var mı kontrol et
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Kullanıcı bulunamadı: " + request.getUserId()));
+                        "Kullanici bulunamadi: " + request.getUserId()));
 
-        // Yeni yorum oluştur
         Comment comment = new Comment();
         comment.setContent(request.getContent());
         comment.setTweet(tweet);
@@ -54,15 +52,24 @@ public class CommentService {
         return convertToResponse(savedComment);
     }
 
-    // Yorumu güncelle - sadece yorum sahibi güncelleyebilir
+    // Bir tweet'in tüm yorumlarını getir
+    @Transactional
+    public List<Dtos.CommentResponse> getCommentsByTweetId(Long tweetId) {
+        return commentRepository.findByTweetId(tweetId)
+                .stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Yorumu güncelle
+    @Transactional
     public Dtos.CommentResponse updateComment(Long id, Dtos.CommentRequest request) {
         Comment comment = commentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Yorum bulunamadı: " + id));
+                        "Yorum bulunamadi: " + id));
 
-        // Yetki kontrolü - sadece yorum sahibi güncelleyebilir
         if (!comment.getUser().getId().equals(request.getUserId())) {
-            throw new UnauthorizedException("Bu yorumu güncelleme yetkiniz yok");
+            throw new UnauthorizedException("Bu yorumu guncelleme yetkiniz yok");
         }
 
         comment.setContent(request.getContent());
@@ -71,12 +78,12 @@ public class CommentService {
     }
 
     // Yorumu sil - yorum sahibi veya tweet sahibi silebilir
+    @Transactional
     public void deleteComment(Long id, Long userId) {
         Comment comment = commentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Yorum bulunamadı: " + id));
+                        "Yorum bulunamadi: " + id));
 
-        // Yetki kontrolü: yorum sahibi VEYA tweet sahibi silebilir
         boolean isCommentOwner = comment.getUser().getId().equals(userId);
         boolean isTweetOwner = comment.getTweet().getUser().getId().equals(userId);
 
@@ -87,7 +94,7 @@ public class CommentService {
         commentRepository.delete(comment);
     }
 
-    // Comment entity'sini CommentResponse DTO'ya çevirir
+    // Comment entity'sini DTO'ya çevirir
     private Dtos.CommentResponse convertToResponse(Comment comment) {
         Dtos.CommentResponse response = new Dtos.CommentResponse();
         response.setId(comment.getId());

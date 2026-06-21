@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 // CommentController - Yorum endpoint'lerini yönetir
 @RestController
@@ -28,8 +29,15 @@ public class CommentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    // GET /comment/tweet/1 - Bir tweet'in tüm yorumlarını getir
+    @GetMapping("/tweet/{tweetId}")
+    public ResponseEntity<List<Dtos.CommentResponse>> getCommentsByTweetId(
+            @PathVariable Long tweetId) {
+        List<Dtos.CommentResponse> comments = commentService.getCommentsByTweetId(tweetId);
+        return ResponseEntity.ok(comments);
+    }
+
     // PUT /comment/1 - Yorumu güncelle
-    // Sadece yorum sahibi güncelleyebilir
     @PutMapping("/{id}")
     public ResponseEntity<Dtos.CommentResponse> updateComment(
             @PathVariable Long id,
@@ -39,12 +47,11 @@ public class CommentController {
     }
 
     // DELETE /comment/1?userId=1 - Yorumu sil
-    // Yorum sahibi veya tweet sahibi silebilir
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteComment(
             @PathVariable Long id,
             @RequestParam Long userId) {
         commentService.deleteComment(id, userId);
-        return ResponseEntity.ok("Yorum başarıyla silindi");
+        return ResponseEntity.ok("Yorum basariyla silindi");
     }
 }
