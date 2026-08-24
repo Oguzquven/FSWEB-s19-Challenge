@@ -3,6 +3,7 @@ package com.workintech.twitter.security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -26,6 +27,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
+
+    @Value("${app.cors.allowed-origins:http://localhost:3200,http://localhost:5173}")
+    private String allowedOrigins;
 
     @Autowired
     public SecurityConfig(CustomUserDetailsService userDetailsService) {
@@ -61,7 +65,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         // React uygulamasının çalıştığı port - README'de 3200 isteniyor
-        config.setAllowedOrigins(List.of("http://localhost:3200"));
+        config.setAllowedOrigins(
+                List.of(allowedOrigins.split(",")).stream()
+                        .map(String::trim)
+                        .filter(origin -> !origin.isBlank())
+                        .toList()
+        );
         // İzin verilen HTTP metodları
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         // İzin verilen header'lar
