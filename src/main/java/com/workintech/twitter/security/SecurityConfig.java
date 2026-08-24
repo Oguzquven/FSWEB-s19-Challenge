@@ -65,7 +65,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         // React uygulamasının çalıştığı port - README'de 3200 isteniyor
-        config.setAllowedOrigins(
+        config.setAllowedOriginPatterns(
                 List.of(allowedOrigins.split(",")).stream()
                         .map(String::trim)
                         .filter(origin -> !origin.isBlank())
